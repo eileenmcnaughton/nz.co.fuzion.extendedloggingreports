@@ -66,6 +66,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   }
 
   protected function whoWhomWhenSql($contactId = null) {
+    $contactClause = '';
     if($contactId){
       $contactClause = ' AND whom.id = %3 ';
     }
