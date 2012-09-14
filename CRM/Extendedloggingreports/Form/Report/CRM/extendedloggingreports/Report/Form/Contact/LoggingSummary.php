@@ -16,6 +16,10 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
     $this->_logTables['log_civicrm_email']['log_type'] = 'Email';
     $this->_logTables['log_civicrm_phone']['log_type'] = 'Phone';
     $this->_logTables['log_civicrm_address']['log_type'] = 'Address';
+    $this->_logTables['log_civicrm_website']= array(
+      'log_type' => 'Website',
+       'fk'  => 'contact_id',
+    );
     foreach ( array_keys($this->_logTables) as  $table ) {
       $type = $this->getLogType($table);
       $logTypes[$type] = $type;
