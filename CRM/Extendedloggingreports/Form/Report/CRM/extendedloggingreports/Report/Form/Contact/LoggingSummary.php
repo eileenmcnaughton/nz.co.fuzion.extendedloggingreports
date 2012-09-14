@@ -164,6 +164,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
           ),
       ),
     );
+    CRM_Core_DAO::executeQuery('SET SESSION group_concat_max_len = 1000000');
     parent::__construct();
   }
 
@@ -178,7 +179,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
         if (array_key_exists('group_bys', $table)) {
           foreach ($table['group_bys'] as $fieldName => $field) {
             if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys'])) {
-              if($field['frequency'] == 1){
+              if(CRM_Utils_Array::value('frequency',$field) == 1){
                 $groupBys[] = "EXTRACT({$this->_params['group_bys_freq'][$fieldName]} FROM  {$field['dbAlias']})";
                 $this->timeInterval = $this->_params['group_bys_freq'][$fieldName];
               }
@@ -214,13 +215,20 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
           CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $row['log_civicrm_entity_altered_contact_id'], 'is_deleted') !== '0';
       }
 
-      if (!$isDeleted[$row['log_civicrm_entity_altered_contact_id']]) {
+      if (!empty($row['log_civicrm_entity_altered_contact_id']['is_deleted'])) {
         if(strpos($row['log_civicrm_entity_altered_contact_id'], $this->_groupConcatSeparator) !== FALSE){
           $alteredContacts = explode(',', $row['log_civicrm_entity_altered_contact_id']);
           $alteredContactsName = explode(',', $row['log_civicrm_entity_altered_contact']);
+          $alterContactsDetail = array();
           $alteredContactsStr = '';
+
           foreach ($alteredContacts as $index => $cid){
-            $alteredContactsStr .=  "<a href=" . CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid=' . $cid ). ">" . $alteredContactsName[$index] . "</a>, ";
+            if(!array_key_exists($cid, $alterContactsDetail)){
+              // ie. don't display a given contact more than once
+              $alteredContactsStr .=  "<a href=" . CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid=' . $cid ). ">" . $alteredContactsName[$index] . "</a>, ";
+            }
+
+            $alterContactsDetail[$cid] = $alteredContactsName[$index];
           }
           $row['log_civicrm_entity_altered_contact'] = rtrim($alteredContactsStr,', ');
         }
@@ -290,7 +298,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
           }
           if (CRM_Utils_Array::value('required', $field) or CRM_Utils_Array::value($fieldName, $this->_params['fields'])) {
             if(!empty($this->_params['group_bys']) && is_array($this->_params['group_bys']) &! array_key_exists($fieldName, $this->_params['group_bys']) && empty($field['no_concat'])){
-              if($fieldName == 'civicrm_entity_altered_contact' || $fieldName == 'entity_altered_contact_id' ){
+              if($fieldName == 'altered_contact' || $fieldName == 'altered_contact_id' ){
                 // possible rare condition of two same-name, diff id next to each other
                 $select[] = "GROUP_CONCAT({$field['dbAlias']} SEPARATOR '$this->_groupConcatSeparator') as {$tableName}_{$fieldName}";
               }
