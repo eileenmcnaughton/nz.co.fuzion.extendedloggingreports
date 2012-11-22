@@ -14,6 +14,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   protected $_groupConcatSeparator = ',';
 
   function __construct() {
+    $this->_limit = 25;
     $this->_logTables['log_civicrm_email']['log_type'] = 'Email';
     $this->_logTables['log_civicrm_phone']['log_type'] = 'Phone';
     $this->_logTables['log_civicrm_address']['log_type'] = 'Address';
@@ -163,6 +164,14 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
               ),
           ),
       ),
+      'pseudofields' => array(
+        'dao'   => 'CRM_Contact_DAO_Contact',
+        'filters' => array(
+          'limit' => array(
+            'title' => ts('Number of Records (note that this works best on a single entity type'),
+            'type' => CRM_Utils_Type::T_INT,
+          ),
+        ),)
     );
     CRM_Core_DAO::executeQuery('SET SESSION group_concat_max_len = 1000000');
     parent::__construct();
@@ -382,28 +391,38 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
       CRM_Utils_Array::value("log_date_to_time",   $this->_params));
     $logDateClause = $logDateClause ? "AND {$logDateClause}" : null;
 
-    list($offset, $rowCount) = $this->limit();
-    $this->_limit = NULL;
+    if($this->_params['limit_value']){
+      $this->_limit = $this->_params['limit_value'];
+    }
+    $logTypes = CRM_Utils_Array::value('log_type_value', $this->_params);
+    unset($this->_params['log_type_value']);
 
+    if ( empty($logTypes) ) {
+      foreach ( array_keys($this->_logTables) as  $table ) {
+        $type = $this->getLogType($table);
+        $logTypes[$type] = $type;
+      }
+    }
+
+    list($offset, $rowCount) = $this->limit($this->_limit);
+    unset($this->_params['limit_value']);
+    $this->_limit = NULL;
     foreach ( $this->_logTables as $entity => $detail ) {
+      if ((in_array($this->getLogType($entity), $logTypes) &&
+        CRM_Utils_Array::value('log_type_op', $this->_params) == 'in') ||
+        (!in_array($this->getLogType($entity), $logTypes) &&
+          CRM_Utils_Array::value('log_type_op', $this->_params) == 'notin')) {
       $clause = CRM_Utils_Array::value('entity_table', $detail);
       $clause = $clause ? "entity_table = 'civicrm_contact' AND" : null;
       $sql    = "
       INSERT IGNORE INTO civicrm_temp_civireport_logsummary ( contact_id )
       SELECT DISTINCT {$detail['fk']} FROM `{$this->loggingDB}`.{$entity}
-      WHERE {$clause} log_action != 'Initialization' {$logDateClause} LIMIT {$rowCount}";
+      WHERE {$clause} log_action != 'Initialization' {$logDateClause}
+      ORDER BY log_date DESC LIMIT {$rowCount}";
       CRM_Core_DAO::executeQuery($sql);
+      }
   }
 
-  $logTypes = CRM_Utils_Array::value('log_type_value', $this->_params);
-  unset($this->_params['log_type_value']);
-
-  if ( empty($logTypes) ) {
-    foreach ( array_keys($this->_logTables) as  $table ) {
-      $type = $this->getLogType($table);
-      $logTypes[$type] = $type;
-    }
-  }
 
   foreach ( $this->_logTables as $entity => $detail ) {
     if ((in_array($this->getLogType($entity), $logTypes) &&
