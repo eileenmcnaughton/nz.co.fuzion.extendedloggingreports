@@ -12,6 +12,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   );
   protected $timeInterval = 'DAY_MICROSECOND';
   protected $_groupConcatSeparator = ',';
+
   function __construct() {
     $this->_logTables['log_civicrm_email']['log_type'] = 'Email';
     $this->_logTables['log_civicrm_phone']['log_type'] = 'Phone';
@@ -38,7 +39,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
             'no_concat' => TRUE,
           ),
           'log_type' => array(
-            'required' => TRUE,
+            'soft_required' => TRUE,
             'title' => ts('Log Type'),
             'no_concat' => TRUE,
           ),
@@ -48,7 +49,6 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
           ),
           'log_date' => array(
             'default' => TRUE,
-            'required' => TRUE,
             'type' => CRM_Utils_Type::T_TIME,
             'title' => ts('When'),
           ),
