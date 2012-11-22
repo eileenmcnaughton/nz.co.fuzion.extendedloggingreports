@@ -332,6 +332,10 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
     }
 
   }
+  /**
+   *
+   * @param string $logTable
+   */
   function from( $logTable = null ) {
     static $entity = null;
     if ( $logTable ) {
@@ -352,5 +356,79 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
         ON (entity_log_civireport.log_user_id = altered_by_contact_civireport.id)";
   }
 
+  /**
+   * Unfortunately we have to override 4.2 parent class because it unsets our ability to
+   * save the filter on log type
+   *
+   *   function is same as parent except we reset
+   *   $this->_params['log_type_value'] = $logTypes;
+   */
+  function postProcess() {
+    $this->beginPostProcess();
+    $rows = array();
+    // temp table to hold all altered contact-ids
+    $sql = "
+ CREATE TEMPORARY TABLE
+       civicrm_temp_civireport_logsummary ( id int PRIMARY KEY AUTO_INCREMENT,
+                                            contact_id int, UNIQUE UI_id (contact_id) ) ENGINE=HEAP";
+    CRM_Core_DAO::executeQuery($sql);
+
+    $logDateClause = $this->dateClause('log_date',
+      CRM_Utils_Array::value("log_date_relative",  $this->_params),
+      CRM_Utils_Array::value("log_date_from",      $this->_params),
+      CRM_Utils_Array::value("log_date_to",        $this->_params),
+      CRM_Utils_Type::T_DATE,
+      CRM_Utils_Array::value("log_date_from_time", $this->_params),
+      CRM_Utils_Array::value("log_date_to_time",   $this->_params));
+    $logDateClause = $logDateClause ? "AND {$logDateClause}" : null;
+
+    list($offset, $rowCount) = $this->limit();
+    $this->_limit = NULL;
+
+    foreach ( $this->_logTables as $entity => $detail ) {
+      $clause = CRM_Utils_Array::value('entity_table', $detail);
+      $clause = $clause ? "entity_table = 'civicrm_contact' AND" : null;
+      $sql    = "
+      INSERT IGNORE INTO civicrm_temp_civireport_logsummary ( contact_id )
+      SELECT DISTINCT {$detail['fk']} FROM `{$this->loggingDB}`.{$entity}
+      WHERE {$clause} log_action != 'Initialization' {$logDateClause} LIMIT {$rowCount}";
+      CRM_Core_DAO::executeQuery($sql);
+  }
+
+  $logTypes = CRM_Utils_Array::value('log_type_value', $this->_params);
+  unset($this->_params['log_type_value']);
+
+  if ( empty($logTypes) ) {
+    foreach ( array_keys($this->_logTables) as  $table ) {
+      $type = $this->getLogType($table);
+      $logTypes[$type] = $type;
+    }
+  }
+
+  foreach ( $this->_logTables as $entity => $detail ) {
+    if ((in_array($this->getLogType($entity), $logTypes) &&
+    CRM_Utils_Array::value('log_type_op', $this->_params) == 'in') ||
+          (!in_array($this->getLogType($entity), $logTypes) &&
+            CRM_Utils_Array::value('log_type_op', $this->_params) == 'notin')) {
+     $this->from( $entity );
+     $sql = $this->buildQuery(false);
+     $sql = str_replace("entity_log_civireport.log_type as", "'{$entity}' as", $sql);
+     $this->buildRows($sql, $rows);
+    }
+  }
+
+  if ( !empty($logTypes) ) {
+    $this->_params['log_type_value'] = $logTypes;
+  }
+
+            // format result set.
+  $this->formatDisplay($rows);
+
+  // assign variables to templates
+  $this->doTemplateAssignment($rows);
+
+  // do print / pdf / instance stuff if needed
+  $this->endPostProcess($rows);
+  }
 }
 
