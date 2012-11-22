@@ -1,9 +1,14 @@
 <?xml version="1.0"?>
 <extension key="nz.co.fuzion.extendedloggingreports" type="module">
-  <downloadUrl>http://github.com/eileenmcnaughton/nz.co.fuzion.extendedloggingreports/zipball/master</downloadUrl>
+  <downloadUrl>http://github.com/eileenmcnaughton/nz.co.fuzion.extendedloggingreports/archive/master.zip</downloadUrl>
   <file>extendedloggingreports</file>
   <name>Extended Logging Reports</name>
   <description>Logging reports to deal with batch or script updates</description>
+  <urls>
+    <url desc="Main Extension Page">http://civicrm.org</url>
+    <url desc="Support">http://forum.civicrm.org</url>
+    <url desc="Licensing">http://civicrm.org/licensing</url>
+  </urls>
   <license>AGPL</license>
   <maintainer>
     <author>Eileen McNaughton</author>
@@ -11,11 +16,11 @@
   </maintainer>
   <releaseDate>2012-09-04</releaseDate>
   <version>1.0</version>
-  <develStage>beta</develStage>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>4.2</ver>
   </compatibility>
-  <comments>Module is designed for the situation where updates are done by batch and logging reports need to cover longer process and multple contacts. Report works information will be limited with this patch http://issues.civicrm.org/jira/browse/CRM-10748</comments>
+  <comments>Module is designed for the situation where updates are done by batch and logging reports need to cover longer process and multple contacts or where more reporting flexibility is required</comments>
   <civix>
     <namespace>CRM/Extendedloggingreports</namespace>
   </civix>
