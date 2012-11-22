@@ -12,6 +12,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   );
   protected $timeInterval = 'DAY_MICROSECOND';
   protected $_groupConcatSeparator = ',';
+  protected $_groupFilter = true;
 
   function __construct() {
     $this->_limit = 25;
@@ -139,7 +140,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
             ),
          ),
       ),
-      'altered_by_contact' => array(
+      'civicrm_contact' => array(
         'dao'   => 'CRM_Contact_DAO_Contact',
         'alias' => 'altered_by_contact',
         'fields' => array(
