@@ -6,6 +6,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   protected $log_conn_ids = array();
   protected $rows = array();
   protected $contacts = array();
+  protected $interval = '10 SECOND';
 
   function __construct() {
     $logging = new CRM_Logging_Schema;
@@ -114,7 +115,12 @@ WHERE log_action = 'Update'  $contactClause AND log_conn_id = %1 AND log_date BE
     }
     $rows = $this->rows;
   }
-
+/**
+ * We have to override this in order to have flexible intervals (not in core until 4.3)
+ * AND to be able to gt contact id on the emails etc - note this has been reworked in core in
+ * 4.3 & is an unknown
+ * @param string $table
+ */
   protected function diffsInTable($table) {
 
     foreach ($this->log_conn_ids as $log_conn_id){
