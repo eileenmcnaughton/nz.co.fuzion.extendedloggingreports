@@ -15,7 +15,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   protected $_groupFilter = true;
 
   function __construct() {
-    $this->_limit = 25;
+
     $this->_logTables['log_civicrm_email']['log_type'] = 'Email';
     $this->_logTables['log_civicrm_phone']['log_type'] = 'Phone';
     $this->_logTables['log_civicrm_address']['log_type'] = 'Address';
@@ -84,7 +84,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
           'log_date' => array(
             'title' => ts('When'),
             'operatorType' => CRM_Report_Form::OP_DATE,
-            'type' => CRM_Utils_Type::T_DATE,
+            'type' => CRM_Utils_Type::T_TIME,
           ),
           'altered_contact' => array(
             'name' => 'display_name',
@@ -118,7 +118,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
             'log_date' => array(
                 'title' => ts('When'),
                 'operatorType' => CRM_Report_Form::OP_DATE,
-                'type' => CRM_Utils_Type::T_DATE,
+                'type' => CRM_Utils_Type::T_TIME,
                 'frequency' => TRUE,
             ),
             'altered_contact_id' => array(
@@ -365,10 +365,9 @@ LEFT JOIN civicrm_contact modified_contact_civireport
 LEFT  JOIN civicrm_contact altered_by_contact_civireport
         ON (entity_log_civireport.log_user_id = altered_by_contact_civireport.id)";
   }
-
   /**
    * Unfortunately we have to override 4.2 parent class because it unsets our ability to
-   * save the filter on log type
+   * save the filter on log type. We have also made limit configurable
    *
    *   function is same as parent except we reset
    *   $this->_params['log_type_value'] = $logTypes;
@@ -377,8 +376,10 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
     $this->beginPostProcess();
     $rows = array();
     // temp table to hold all altered contact-ids
+    $sql = " DROP TABLE IF EXISTS civicrm_temp_civireport_logsummary";
+    CRM_Core_DAO::executeQuery($sql);
     $sql = "
- CREATE TEMPORARY TABLE
+ CREATE  TABLE
        civicrm_temp_civireport_logsummary ( id int PRIMARY KEY AUTO_INCREMENT,
                                             contact_id int, UNIQUE UI_id (contact_id) ) ENGINE=HEAP";
     CRM_Core_DAO::executeQuery($sql);
@@ -387,13 +388,17 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
       CRM_Utils_Array::value("log_date_relative",  $this->_params),
       CRM_Utils_Array::value("log_date_from",      $this->_params),
       CRM_Utils_Array::value("log_date_to",        $this->_params),
-      CRM_Utils_Type::T_DATE,
+      CRM_Utils_Type::T_TIME,
       CRM_Utils_Array::value("log_date_from_time", $this->_params),
       CRM_Utils_Array::value("log_date_to_time",   $this->_params));
     $logDateClause = $logDateClause ? "AND {$logDateClause}" : null;
+    $logActions = implode("','", $this->_params['log_action_value']);
+    if(!empty($logActions)){
+      $logDateClause .= " AND log_action IN ('" . $logActions . "')";
+    }
 
     if($this->_params['limit_value']){
-      $this->_limit = $this->_params['limit_value'];
+      $this->_limit = $configuredLimit = $this->_params['limit_value'];
     }
     $logTypes = CRM_Utils_Array::value('log_type_value', $this->_params);
     unset($this->_params['log_type_value']);
@@ -416,12 +421,14 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
       $clause = CRM_Utils_Array::value('entity_table', $detail);
       $clause = $clause ? "entity_table = 'civicrm_contact' AND" : null;
       $sql    = "
-      INSERT IGNORE INTO civicrm_temp_civireport_logsummary ( contact_id )
+      REPLACE INTO civicrm_temp_civireport_logsummary ( contact_id )
       SELECT DISTINCT {$detail['fk']} FROM `{$this->loggingDB}`.{$entity}
       WHERE {$clause} log_action != 'Initialization' {$logDateClause}
       ORDER BY log_date DESC LIMIT {$rowCount}";
+
       CRM_Core_DAO::executeQuery($sql);
       }
+
   }
 
 
@@ -440,7 +447,9 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
   if ( !empty($logTypes) ) {
     $this->_params['log_type_value'] = $logTypes;
   }
-
+  if(!empty($configuredLimit)){
+    $this->_params['limit_value'] = $configuredLimit;
+  }
             // format result set.
   $this->formatDisplay($rows);
 
