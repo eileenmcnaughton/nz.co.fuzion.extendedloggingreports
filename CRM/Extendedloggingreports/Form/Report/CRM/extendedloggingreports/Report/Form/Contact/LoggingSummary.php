@@ -1,6 +1,5 @@
 <?php
 
-require_once 'CRM/Report/Form.php';
 
 class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
   protected $_groupByDateFreq = array(
@@ -13,6 +12,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   protected $timeInterval = 'DAY_MICROSECOND';
   protected $_groupConcatSeparator = ',';
   protected $_groupFilter = true;
+  protected $_tempTable = '';
 
   function __construct() {
 
@@ -246,8 +246,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
         $row['log_civicrm_entity_altered_contact_link'] =
           CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid=' . $row['log_civicrm_entity_altered_contact_id']);
         $row['log_civicrm_entity_altered_contact_hover'] = ts("Go to contact summary");
-        $entity = $this->getEntityValue($row['log_civicrm_entity_id'], $row['log_civicrm_entity_log_type']);
-        if ($entity)
+        $entity = $this->getEntityValue($row['log_civicrm_entity_id'], $row['log_civicrm_entity_log_type'], $row['log_civicrm_entity_log_date']);        if ($entity)
           $row['log_civicrm_entity_altered_contact'] = $row['log_civicrm_entity_altered_contact'] . " [{$entity}]";
         }
       }
@@ -358,7 +357,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
 
     $this->_from = "
 FROM `{$this->loggingDB}`.$entity entity_log_civireport
-INNER JOIN civicrm_temp_civireport_logsummary temp
+INNER JOIN {$this->_tempTable} temp
         ON (entity_log_civireport.{$detail['fk']} = temp.contact_id)
 LEFT JOIN civicrm_contact modified_contact_civireport
         ON (entity_log_civireport.{$detail['fk']} = modified_contact_civireport.id {$clause})
@@ -375,13 +374,14 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
   function postProcess() {
     $this->beginPostProcess();
     $rows = array();
+    $this->_tempTable = 'civicrm_temp_civireport_logsummary' . rand(0, 10000000);
     // temp table to hold all altered contact-ids
-    $sql = " DROP TABLE IF EXISTS civicrm_temp_civireport_logsummary";
+    $sql = " DROP TABLE IF EXISTS {$this->_tempTable}";
     CRM_Core_DAO::executeQuery($sql);
     $sql = "
- CREATE  TABLE
-       civicrm_temp_civireport_logsummary ( id int PRIMARY KEY AUTO_INCREMENT,
-                                            contact_id int, UNIQUE UI_id (contact_id) ) ENGINE=HEAP";
+      CREATE  TABLE
+      {$this->_tempTable} ( id int PRIMARY KEY AUTO_INCREMENT,
+      contact_id int, UNIQUE UI_id (contact_id) ) ENGINE=HEAP";
     CRM_Core_DAO::executeQuery($sql);
 
     $logDateClause = $this->dateClause('log_date',
@@ -421,7 +421,7 @@ LEFT  JOIN civicrm_contact altered_by_contact_civireport
       $clause = CRM_Utils_Array::value('entity_table', $detail);
       $clause = $clause ? "entity_table = 'civicrm_contact' AND" : null;
       $sql    = "
-      REPLACE INTO civicrm_temp_civireport_logsummary ( contact_id )
+      REPLACE INTO {$this->_tempTable} ( contact_id )
       SELECT DISTINCT {$detail['fk']} FROM `{$this->loggingDB}`.{$entity}
       WHERE {$clause} log_action != 'Initialization' {$logDateClause}
       ORDER BY log_date DESC LIMIT {$rowCount}";
