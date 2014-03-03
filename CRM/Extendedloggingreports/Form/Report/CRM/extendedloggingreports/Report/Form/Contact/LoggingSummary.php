@@ -267,8 +267,8 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
 
       if (strpos($row['log_civicrm_entity_id'],',') !== FALSE && $newAction = $this->getEntityAction($row['log_civicrm_entity_id'], $row['log_civicrm_entity_log_conn_id'], $row['log_civicrm_entity_log_type']))
         $row['log_civicrm_entity_log_action'] = $newAction;
-
-      $row['log_civicrm_entity_log_type'] = $this->getLogType($row['log_civicrm_entity_log_type']);
+      $logType = empty($row['log_civicrm_entity_log_type']) ? '' : $row['log_civicrm_entity_log_type'];
+      $row['log_civicrm_entity_log_type'] = $this->getLogType($logType );
 
     //  if ($row['log_civicrm_entity_log_action'] == 'Update') {
         $q = "reset=1&force=1&log_conn_id={$row['log_civicrm_entity_log_conn_id']}&log_date={$row['log_civicrm_entity_log_date']}&time_interval={$this->timeInterval}";
