@@ -87,7 +87,7 @@ class CRM_Logging_Differ {
       }
     }
 
-    // find ids in this table that were affected in the given connection (based on connection id and a ±10 s time period around the date)
+    // find ids in this table that were affected in the given connection (based on connection id and a Â±10 s time period around the date)
     $sql = "SELECT DISTINCT id FROM `{$this->db}`.`log_$table` WHERE log_conn_id = %1 AND log_date BETWEEN DATE_SUB(%2, INTERVAL {$this->interval} ) AND DATE_ADD(%2, INTERVAL {$this->interval} ) {$contactIdClause}";
     $dao = CRM_Core_DAO::executeQuery($sql, $params);
     while ($dao->fetch()) {
@@ -200,7 +200,7 @@ class CRM_Logging_Differ {
         $values[$table] = array(
           'contribution_page_id' => CRM_Contribute_PseudoConstant::contributionPage(),
           'contribution_status_id' => CRM_Contribute_PseudoConstant::contributionStatus(),
-          'contribution_type_id' => CRM_Contribute_PseudoConstant::contributionType(),
+          'contribution_type_id' => CRM_Contribute_PseudoConstant::financialType(),
           'country_id' => CRM_Core_PseudoConstant::country(),
           'gender_id' => CRM_Core_PseudoConstant::gender(),
           'location_type_id' => CRM_Core_PseudoConstant::locationType(),
