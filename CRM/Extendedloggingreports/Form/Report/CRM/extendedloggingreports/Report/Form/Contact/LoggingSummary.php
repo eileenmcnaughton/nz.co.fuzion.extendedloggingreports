@@ -1,7 +1,7 @@
 <?php
 
 
-class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
+class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_Form_Contact_LoggingSummary extends CRM_Report_Form_Contact_LoggingSummary {
   protected $_groupByDateFreq = array(
     'DAY_MICROSECOND' => 'Microsecond (Single Transaction)',
     'DAY_MINUTE' => '1 minute',
@@ -15,171 +15,56 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
   protected $_tempTable = '';
 
   function __construct() {
+    parent::__construct();
 
-    $this->_logTables['log_civicrm_email']['log_type'] = 'Email';
-    $this->_logTables['log_civicrm_phone']['log_type'] = 'Phone';
-    $this->_logTables['log_civicrm_address']['log_type'] = 'Address';
-    $this->_logTables['log_civicrm_website']= array(
-      'log_type' => 'Website',
-       'fk'  => 'contact_id',
-    );
-    foreach ( array_keys($this->_logTables) as  $table ) {
-      $type = $this->getLogType($table);
-      $logTypes[$type] = $type;
-    }
-
-    asort($logTypes);
-
-    $this->_columns = array(
-      'log_civicrm_entity' => array(
-        'dao' => 'CRM_Contact_DAO_Contact',
-        'alias' => 'entity_log',
-        'fields' => array(
-          'id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-            'no_concat' => TRUE,
-          ),
-          'log_type' => array(
-            'soft_required' => TRUE,
-            'title' => ts('Log Type'),
-            'no_concat' => TRUE,
-          ),
-          'log_user_id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-          ),
-          'log_date' => array(
-            'default' => TRUE,
-            'type' => CRM_Utils_Type::T_TIME,
-            'title' => ts('When'),
-          ),
-          'altered_contact' => array(
-            'default' => TRUE,
-            'name' => 'display_name',
-            'title' => ts('Altered Contact'),
-            'alias' => 'modified_contact_civireport',
-          ),
-          'altered_contact_id' => array(
-            'name' => 'id',
-            'no_display' => TRUE,
-            'required' => TRUE,
-            'alias'    => 'modified_contact_civireport',
-          ),
-          'log_conn_id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-          ),
-          'log_action' => array(
-            'default' => TRUE,
-            'title' => ts('Action'),
-          ),
-          'is_deleted' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-            'alias' => 'modified_contact_civireport',
-          ),
-        ),
-        'filters' => array(
-          'log_date' => array(
-            'title' => ts('When'),
-            'operatorType' => CRM_Report_Form::OP_DATE,
-            'type' => CRM_Utils_Type::T_TIME,
-          ),
-          'altered_contact' => array(
-            'name' => 'display_name',
-            'title' => ts('Altered Contact'),
-            'type' => CRM_Utils_Type::T_STRING,
-          ),
-          'altered_contact_id' => array(
-            'name' => 'id',
-            'type' => CRM_Utils_Type::T_INT,
-            'alias' => 'modified_contact_civireport',
-            'no_display' => TRUE,
-          ),
-          'log_type' => array(
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => $logTypes,
-            'title' => ts('Log Type'),
-            'type' => CRM_Utils_Type::T_STRING,
-          ),
-          'log_action' => array(
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => array('Insert' => ts('Insert'), 'Update' => ts('Update'), 'Delete' => ts('Delete')),
-            'title' => ts('Action'),
-            'type' => CRM_Utils_Type::T_STRING,
-          ),
-          'id' => array(
-            'no_display' => TRUE,
-            'type' => CRM_Utils_Type::T_INT,
-          ),
-        ),
-        'group_bys' => array(
-            'log_date' => array(
-                'title' => ts('When'),
-                'operatorType' => CRM_Report_Form::OP_DATE,
-                'type' => CRM_Utils_Type::T_TIME,
-                'frequency' => TRUE,
-            ),
-            'altered_contact_id' => array(
-                'title' => ts('Altered Contact'),
-                'name' => 'id',
-                'type' => CRM_Utils_Type::T_INT,
-                'alias' => 'modified_contact_civireport',
-            ),
-            'log_action' => array(
-                'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-                'options' => array('Insert' => ts('Insert'), 'Update' => ts('Update'), 'Delete' => ts('Delete')),
-                'title' => ts('Action'),
+    $this->_columns['log_civicrm_entity']['group_bys'] = array(
+      'log_date' => array(
+          'title' => ts('When'),
+          'operatorType' => CRM_Report_Form::OP_DATE,
+          'type' => CRM_Utils_Type::T_TIME,
+          'frequency' => TRUE,
+      ),
+      'altered_contact_id' => array(
+          'title' => ts('Altered Contact'),
+          'name' => 'id',
+          'type' => CRM_Utils_Type::T_INT,
+          'alias' => 'modified_contact_civireport',
+      ),
+      'log_action' => array(
+          'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+          'options' => array('Insert' => ts('Insert'), 'Update' => ts('Update'), 'Delete' => ts('Delete')),
+          'title' => ts('Action'),
+          'type' => CRM_Utils_Type::T_STRING,
+          'required' => TRUE,
+      ),
+      'log_conn_id' => array(
+          'title' => ts('Transaction or batch'),
+          'type' => CRM_Utils_Type::T_INT,
+      ),
+      );
+    $this->_columns['civicrm_contact']['group_bys'] =
+       array(
+         'display_name' => array(
+                'name' => 'display_name',
+                'title' => ts('Altered By'),
                 'type' => CRM_Utils_Type::T_STRING,
-                'required' => TRUE,
-            ),
-            'log_conn_id' => array(
-                'title' => ts('Transaction or batch'),
-                'type' => CRM_Utils_Type::T_INT,
-            ),
-         ),
-      ),
-      'civicrm_contact' => array(
-        'dao'   => 'CRM_Contact_DAO_Contact',
-        'alias' => 'altered_by_contact',
-        'fields' => array(
-          'display_name' => array(
-            'default' => TRUE,
-            'name' => 'display_name',
-            'title' => ts('Altered By'),
-          ),
         ),
-        'filters' => array(
-          'display_name' => array(
-            'name' => 'display_name',
-            'title' => ts('Altered By'),
-            'type' => CRM_Utils_Type::T_STRING,
-          ),
-        ),
-        'group_bys' => array(
-           'display_name' => array(
-                  'name' => 'display_name',
-                  'title' => ts('Altered By'),
-                  'type' => CRM_Utils_Type::T_STRING,
-              ),
-          ),
-      ),
-      'pseudofields' => array(
+      );
+    $this->_columns['civicrm_contact']['pseudofields'] = array(
         'dao'   => 'CRM_Contact_DAO_Contact',
         'filters' => array(
           'limit' => array(
             'title' => ts('Number of Records (note that this works best on a single entity type'),
             'type' => CRM_Utils_Type::T_INT,
           ),
-        ),)
+        ),
     );
     CRM_Core_DAO::executeQuery('SET SESSION group_concat_max_len = 1000000');
-    parent::__construct();
+
   }
 
   function groupBy() {
-    $this->_groupBy = 'GROUP BY log_conn_id, log_user_id, EXTRACT(DAY_MICROSECOND FROM log_date)';
+    $this->_groupBy = 'GROUP BY entity_log_civireport.log_conn_id, entity_log_civireport.log_user_id, EXTRACT(DAY_MICROSECOND FROM entity_log_civireport.log_date)';
     $groupBys = array();
     if (CRM_Utils_Array::value('group_bys', $this->_params) &&
         is_array($this->_params['group_bys']) &&
@@ -209,7 +94,7 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
 
   function orderBy() {
     if(empty($this->_params['group_bys'])){
-      $this->_orderBy = 'ORDER BY log_date DESC';
+      $this->_orderBy = 'ORDER BY entity_log_civireport.log_date DESC';
     }
   }
 
@@ -294,43 +179,10 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
     $rows = $newRows;
   }
 
-  function select() {
-    $select = array();
-    $this->_columnHeaders = array();
-    foreach ($this->_columns as $tableName => $table) {
-      if (array_key_exists('fields', $table)) {
-        foreach ($table['fields'] as $fieldName => $field) {
-          $selectClause = $this->selectClause($tableName, 'fields', $fieldName, $field);
-          if ($selectClause) {
-            $select[] = $selectClause;
-            continue;
-          }
-          if (CRM_Utils_Array::value('required', $field) or CRM_Utils_Array::value($fieldName, $this->_params['fields'])) {
-            if(!empty($this->_params['group_bys']) && is_array($this->_params['group_bys']) &! array_key_exists($fieldName, $this->_params['group_bys']) && empty($field['no_concat'])){
-              if($fieldName == 'altered_contact' || $fieldName == 'altered_contact_id' ){
-                // possible rare condition of two same-name, diff id next to each other
-                $select[] = "GROUP_CONCAT({$field['dbAlias']} SEPARATOR '$this->_groupConcatSeparator') as {$tableName}_{$fieldName}";
-              }
-              else{
-                $select[] = "GROUP_CONCAT(DISTINCT {$field['dbAlias']} SEPARATOR '$this->_groupConcatSeparator') as {$tableName}_{$fieldName}";
-              }
-            }
-            else{
-              $select[] = "{$field['dbAlias']} as {$tableName}_{$fieldName}";
-            }
-            $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
-            $this->_columnHeaders["{$tableName}_{$fieldName}"]['no_display'] = CRM_Utils_Array::value('no_display', $field);
-            $this->_columnHeaders["{$tableName}_{$fieldName}"]['title'] = CRM_Utils_Array::value('title', $field);
-          }
-        }
-      }
-    }
-    $this->_select = 'SELECT ' . implode(', ', $select) . ' ';
-  }
   /*
    * field specific SELECT
    */
-  function selectClause($tableName, $type, $fieldName, $field) {
+  function selectClause(&$tableName, $tableKey, &$fieldName, &$field) {
     if(!empty($this->_params['group_bys']) && is_array($this->_params['group_bys']) && array_key_exists($fieldName, $this->_params['group_bys'])){
       if($fieldName == 'log_date'){
         $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
@@ -339,125 +191,9 @@ class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_F
       //  return " CONCAT('from ' , min({$field['dbAlias']}), ' to ', max({$field['dbAlias']})) as {$tableName}_{$fieldName}";
       }
     }
-
-  }
-  /**
-   *
-   * @param string $logTable
-   */
-  function from( $logTable = null ) {
-    static $entity = null;
-    if ( $logTable ) {
-      $entity = $logTable;
-    }
-
-    $detail = $this->_logTables[$entity];
-    $clause = CRM_Utils_Array::value('entity_table', $detail);
-    $clause = $clause ? "AND entity_log_civireport.entity_table = 'civicrm_contact'" : null;
-
-    $this->_from = "
-FROM `{$this->loggingDB}`.$entity entity_log_civireport
-INNER JOIN {$this->_tempTable} temp
-        ON (entity_log_civireport.{$detail['fk']} = temp.contact_id)
-LEFT JOIN civicrm_contact modified_contact_civireport
-        ON (entity_log_civireport.{$detail['fk']} = modified_contact_civireport.id {$clause})
-LEFT  JOIN civicrm_contact altered_by_contact_civireport
-        ON (entity_log_civireport.log_user_id = altered_by_contact_civireport.id)";
-  }
-  /**
-   * Unfortunately we have to override 4.2 parent class because it unsets our ability to
-   * save the filter on log type. We have also made limit configurable
-   *
-   *   function is same as parent except we reset
-   *   $this->_params['log_type_value'] = $logTypes;
-   */
-  function postProcess() {
-    $this->beginPostProcess();
-    $rows = array();
-    $this->_tempTable = 'civicrm_temp_civireport_logsummary' . rand(0, 10000000);
-    // temp table to hold all altered contact-ids
-    $sql = " DROP TABLE IF EXISTS {$this->_tempTable}";
-    CRM_Core_DAO::executeQuery($sql);
-    $sql = "
-      CREATE  TABLE
-      {$this->_tempTable} ( id int PRIMARY KEY AUTO_INCREMENT,
-      contact_id int, UNIQUE UI_id (contact_id) ) ENGINE=HEAP";
-    CRM_Core_DAO::executeQuery($sql);
-
-    $logDateClause = $this->dateClause('log_date',
-      CRM_Utils_Array::value("log_date_relative",  $this->_params),
-      CRM_Utils_Array::value("log_date_from",      $this->_params),
-      CRM_Utils_Array::value("log_date_to",        $this->_params),
-      CRM_Utils_Type::T_TIME,
-      CRM_Utils_Array::value("log_date_from_time", $this->_params),
-      CRM_Utils_Array::value("log_date_to_time",   $this->_params));
-    $logDateClause = $logDateClause ? "AND {$logDateClause}" : null;
-    $logActions = implode("','", $this->_params['log_action_value']);
-    if(!empty($logActions)){
-      $logDateClause .= " AND log_action IN ('" . $logActions . "')";
-    }
-
-    if($this->_params['limit_value']){
-      $this->_limit = $configuredLimit = $this->_params['limit_value'];
-    }
-    $logTypes = CRM_Utils_Array::value('log_type_value', $this->_params);
-    unset($this->_params['log_type_value']);
-
-    if ( empty($logTypes) ) {
-      foreach ( array_keys($this->_logTables) as  $table ) {
-        $type = $this->getLogType($table);
-        $logTypes[$type] = $type;
-      }
-    }
-
-    list($offset, $rowCount) = $this->limit($this->_limit);
-    unset($this->_params['limit_value']);
-    $this->_limit = NULL;
-    foreach ( $this->_logTables as $entity => $detail ) {
-      if ((in_array($this->getLogType($entity), $logTypes) &&
-        CRM_Utils_Array::value('log_type_op', $this->_params) == 'in') ||
-        (!in_array($this->getLogType($entity), $logTypes) &&
-          CRM_Utils_Array::value('log_type_op', $this->_params) == 'notin')) {
-      $clause = CRM_Utils_Array::value('entity_table', $detail);
-      $clause = $clause ? "entity_table = 'civicrm_contact' AND" : null;
-      $sql    = "
-      REPLACE INTO {$this->_tempTable} ( contact_id )
-      SELECT DISTINCT {$detail['fk']} FROM `{$this->loggingDB}`.{$entity}
-      WHERE {$clause} log_action != 'Initialization' {$logDateClause}
-      ORDER BY log_date DESC LIMIT {$rowCount}";
-
-      CRM_Core_DAO::executeQuery($sql);
-      }
+    return parent::selectClause($tableName, $tableKey, $fieldName, $field);
 
   }
 
-
-  foreach ( $this->_logTables as $entity => $detail ) {
-    if ((in_array($this->getLogType($entity), $logTypes) &&
-    CRM_Utils_Array::value('log_type_op', $this->_params) == 'in') ||
-          (!in_array($this->getLogType($entity), $logTypes) &&
-            CRM_Utils_Array::value('log_type_op', $this->_params) == 'notin')) {
-     $this->from( $entity );
-     $sql = $this->buildQuery(false);
-     $sql = str_replace("entity_log_civireport.log_type as", "'{$entity}' as", $sql);
-     $this->buildRows($sql, $rows);
-    }
-  }
-
-  if ( !empty($logTypes) ) {
-    $this->_params['log_type_value'] = $logTypes;
-  }
-  if(!empty($configuredLimit)){
-    $this->_params['limit_value'] = $configuredLimit;
-  }
-            // format result set.
-  $this->formatDisplay($rows);
-
-  // assign variables to templates
-  $this->doTemplateAssignment($rows);
-
-  // do print / pdf / instance stuff if needed
-  $this->endPostProcess($rows);
-  }
 }
 

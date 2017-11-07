@@ -1,7 +1,5 @@
 <?php
 
-require_once 'CRM/Report/Form.php';
-
 class CRM_Extendedloggingreports_Form_Report_CRM_extendedloggingreports_Report_Form_Contact_LoggingDetail extends CRM_Logging_ReportDetail {
   protected $log_conn_ids = array();
   protected $rows = array();
